@@ -1,23 +1,27 @@
-Creating a Kubernetes Ingress Resource with a Static IP Address on GCP or GKE
+# Creating a Kubernetes Ingress Resource with a Static IP Address on GCP or GKE
 
-This tutorial will walk you through creating a nginx deployment and expose it using a Kubernetes Ingress Resource associated with a static IP address on GKE. The use cases for doing this:
+This tutorial will walk you through creating a `nginx` deployment and expose it using a Kubernetes Ingress Resource associated with a static IP address on GKE. The use cases for doing this:
 
-    You want to configure DNS before exposing your application to the outside world.
-    Because you can.
+* You want to configure DNS before exposing your application to the outside world.
+* Because you can.
 
 This tutorial only works on GCP or GKE.
-TLDR;
 
-Set the kubernetes.io/ingress.global-static-ip-name annontation on the Ingress config to the name of a Google Cloud Platform (GCP) global IP address as created with the gcloud compute addresses create command.
+## TLDR;
+
+Set the `kubernetes.io/ingress.global-static-ip-name` annontation on the Ingress config to the name of a Google Cloud Platform (GCP) global IP address as created with the `gcloud compute addresses create` command.
 
 Example:
 
 Create a global IP address:
 
+```
 gcloud compute addresses create kubernetes-ingress --global
+```
 
-Set the kubernetes.io/ingress.global-static-ip-name annotation on the Ingress config:
+Set the `kubernetes.io/ingress.global-static-ip-name` annotation on the Ingress config:
 
+```
 kind: Ingress
 metadata:
   name: nginx
@@ -27,27 +31,35 @@ spec:
   backend:
     serviceName: nginx
     servicePort: 80
+```
 
-    The kubernetes.io/ingress.global-static-ip-name only works on GCP or GKE.
+> The `kubernetes.io/ingress.global-static-ip-name` only works on GCP or GKE.
 
-Tutorial
+## Tutorial
 
-Create a global IP address named kubernetes-ingress:
+Create a global IP address named `kubernetes-ingress`:
 
+```
 gcloud compute addresses create kubernetes-ingress --global
+```
 
-Create the nginx deployment:
+Create the `nginx` deployment:
 
+```
 kubectl run nginx --image nginx:1.11 --port 80 --replicas=3
+```
 
-Expose the nginx deployment using a NodePort service:
+Expose the `nginx` deployment using a NodePort service:
 
+```
 kubectl expose deployment nginx --type NodePort
+```
 
-    The service must be type NodePort to ensure the Ingress can perform health checks on the Pod.
+> The service must be type NodePort to ensure the Ingress can perform health checks on the Pod.
 
-Create the nginx ingress resource. Save the nginx ingress config to a file named nginx-ing.yaml:
+Create the `nginx` ingress resource. Save the `nginx` ingress config to a file named `nginx-ing.yaml`:
 
+```
 cat > nginx-ing.yaml << EOF
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -60,38 +72,53 @@ spec:
     serviceName: nginx
     servicePort: 80
 EOF
+```
 
-Create the nginx ingress resource:
+Create the `nginx` ingress resource:
 
+```
 kubectl create -f nginx-ing.yaml
+```
 
-After about 1 minute the nginx ingress resource should be ready for use and associated with the kubernetes-ingress global IP address created earlier. View the details of the nginx ingress resource:
+After about 1 minute the `nginx` ingress resource should be ready for use and associated with the `kubernetes-ingress` global IP address created earlier. View the details of the `nginx` ingress resource:
 
+```
 kubectl get ing nginx
-
+```
+```
 NAME      HOSTS     ADDRESS          PORTS     AGE
 nginx     *         130.211.XX.XXX   80        59s
+```
 
-The nginx ingress address should match the kubernetes-ingress global IP address. Get the kubernetes-ingress IP address and compare it with the nginx ingress IP:
+The `nginx` ingress address should match the `kubernetes-ingress` global IP address. Get the `kubernetes-ingress` IP address and compare it with the `nginx` ingress IP:
 
+```
 gcloud compute addresses \
   describe kubernetes-ingress --global \
   --format='value(address)'
+```
 
+```
 130.211.XX.XXX
+```
 
-At this point you should be able to hit one of the nginx Pods via the kubernetes-ingress IP address. Store the kubernetes-ingress IP address in an environment variable:
+At this point you should be able to hit one of the `nginx` Pods via the `kubernetes-ingress` IP address. Store the `kubernetes-ingress` IP address in an environment variable:
 
+```
 export INGRESS_IP_ADDRESS=$(gcloud compute addresses \
   describe kubernetes-ingress --global \
   --format='value(address)')
+```
 
-Visit the http://${INGRESS_IP_ADDRESS} url:
+Visit the `http://${INGRESS_IP_ADDRESS}` url:
 
+```
 curl http://${INGRESS_IP_ADDRESS}
+```
 
 HTTP Response:
 
+```
 <!DOCTYPE html>
 <html>
 <head>
@@ -117,3 +144,4 @@ Commercial support is available at
 <p><em>Thank you for using nginx.</em></p>
 </body>
 </html>
+```
